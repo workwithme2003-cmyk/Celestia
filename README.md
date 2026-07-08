@@ -2,7 +2,7 @@
 
 Celestia is an interactive, high-performance 3D solar system explorer and orbital mechanics simulator designed with a premium dark theme, fluid animations, and volumetric space aesthetics.
 
-🔗 **Live Local Preview:** `http://localhost:8282`
+🔗 **Live Preview:** [https://workwithme2003-cmyk.github.io/celestia](https://workwithme2003-cmyk.github.io/celestia)
 
 ---
 
@@ -48,3 +48,10 @@ Make sure you have Node.js installed.
    npm start
    ```
 4. Open [http://localhost:8282](http://localhost:8282) in your browser.
+
+### Deployment
+To deploy the project directly to GitHub Pages:
+```bash
+npm run deploy
+```
+
