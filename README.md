@@ -2,7 +2,7 @@
 
 Celestia is an interactive, high-performance 3D solar system explorer and orbital mechanics simulator designed with a premium dark theme, fluid animations, and volumetric space aesthetics.
 
-🔗 **Live Preview:** [https://workwithme2003-cmyk.github.io/celestia](https://workwithme2003-cmyk.github.io/celestia)
+🔗 **Live Preview:** [https://workwithme2003-cmyk.github.io/Celestia](https://workwithme2003-cmyk.github.io/Celestia)
 
 ---
 
