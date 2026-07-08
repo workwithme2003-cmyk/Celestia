@@ -1,0 +1,53 @@
+========================================================================
+                     CELESTIA v2 — PROJECT SPECIFICATION & SUMMARY
+========================================================================
+
+1. GENERAL OVERVIEW
+------------------------------------------------------------------------
+Celestia is an interactive, high-performance solar system explorer and orbit
+simulator. The project is designed with a premium, motion-driven dark aesthetic 
+utilizing modern UI-UX best practices. It comprises a storytelling landing hero 
+page, a two-column sticky planetary catalog, and a live gravitational orbit 
+simulation sandbox.
+
+2. SYSTEM ARCHITECTURE & LANGUAGE STACK
+------------------------------------------------------------------------
+* Languages:
+  - HTML5: Structuring semantic elements, embedding canvases, and setting up
+    ARIA-compliant structures.
+  - CSS3 (Vanilla + Tailwind): Dynamic styling, layout grid models, transitions, 
+    keyframe animations, and custom styling overrides.
+  - JavaScript (ES6+): Client-side application logic, starfield rendering, 
+    interactive orbit physics calculations, state management, and asset loading.
+
+* Project Structure:
+  - index.html   : Main application layout, DOM nodes, CDN script loads, and SEO tags.
+  - style.css    : Custom styling declarations (ambient rings, glassmorphism overlays, 
+                   Aurora mesh transitions, custom slider overrides).
+  - app.js       : Core execution engine (GSAP ScrollTrigger configurations, Lenis 
+                   scroller tick integration, requestAnimationFrame loops for canvas drawing,
+                   orbital physics variables, interactive selector handlers).
+  - package.json : Project dependency manifest, npm run scripts.
+
+3. EXTERNAL LIBRARIES & FRAMEWORKS USED
+------------------------------------------------------------------------
+* Tailwind CSS (CDN Utility Engine):
+  - Used for rapid visual layouts, responsive grids, and layout helpers.
+* GSAP v3 (GreenSock Animation Platform) + ScrollTrigger:
+  - Powers hero element sequencing, staggered panels entrance, and scrolling tracking.
+* Lenis (Smooth Scroll):
+  - Smooths mousewheel input to match premium inertia scroll curves.
+* HTML5 Canvas API:
+  - Draws dynamic twinkling stars in the hero section and runs the real-time orbit map.
+
+4. CORE FUNCTIONAL SPECIFICATIONS
+------------------------------------------------------------------------
+* Twinkling Starfield: Canvas-based background star engine with animated phase-twinkling.
+* Two-Column Sticky Planet Explorer: Left-side canvas with crossfading transition overlays
+  that update dynamically when ScrollTrigger tracks panel entrances on the right.
+* Interactive Orbit Simulator: Physics sandbox that tracks relative planet scales, 
+  radii, and periods with controls for simulation speed and stellar gravity factors.
+* Accessibility & Performance Optimization: Features prefers-reduced-motion queries,
+  WCAG AA/AAA-compliant colors, visible focus indicator rings, and composited 
+  layer transitions.
+========================================================================

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Celestia – A premium interactive solar system explorer with stunning visuals, live orbital mechanics, and real planetary data.">
+  <title>Celestia // Premium Solar Orbit Studio</title>
+
+  <!-- ═══ Google Fonts — Skill: "Classic Elegant" + "Developer Mono" pairing ═══ -->
+  <!-- Playfair Display (heading) + Outfit (body) + JetBrains Mono (code/data)   -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&family=Playfair+Display:ital,wght@0,300..700;1,300..500&family=JetBrains+Mono:ital,wght@0,200..500;1,200..400&display=swap" rel="stylesheet">
+
+  <!-- ═══ Tailwind CSS ═══ -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            /* Skill: Dark OLED palette — Deep Black + vibrant neon accents */
+            space:           '#000000',
+            'space-2':       '#07080a',
+            'space-3':       '#0d0f14',
+            panel:           'rgba(10, 12, 18, 0.72)',
+            /* Skill: Aurora accent — Electric teal + vivid pink */
+            accent:          '#00f5d4',
+            'accent-dim':    'rgba(0,245,212,0.12)',
+            accentSecondary: '#f72585',
+            'acc2-dim':      'rgba(247,37,133,0.12)',
+            /* Skill: Aurora aurora — purple electric blue */
+            aurora:          '#7b2ff7',
+            auroraBlue:      '#0080ff',
+            textMuted:       '#7d8799',
+            textSub:         '#4a5568',
+          },
+          fontFamily: {
+            /* Skill: Classic Elegant + Developer Mono pairings */
+            sans:  ['Outfit', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+            mono:  ['JetBrains Mono', 'monospace'],
+          },
+          backdropBlur: { glass: '18px' },
+          boxShadow: {
+            /* Skill: Glassmorphism shadow system */
+            glass: '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)',
+            'glass-lg': '0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07)',
+            glow:   '0 0 32px rgba(0,245,212,0.22)',
+            'glow-pink': '0 0 32px rgba(247,37,133,0.22)',
+          },
+          animation: {
+            'aurora-shift': 'auroraShift 14s ease-in-out infinite',
+            'float-up':     'floatUp 6s ease-in-out infinite',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- ═══ GSAP + ScrollTrigger (Skill: Motion-Driven, GSAP 10/10 compat) ═══ -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+  <!-- Three.js (WebGL 3D engine) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- ═══ Lenis Smooth Scroll ═══ -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<!-- Skill: Dark OLED — #000 bg, selection accent, reduced-motion aware via CSS -->
+<body class="bg-space text-[#f0f2f8] font-sans min-h-screen overflow-x-hidden
+             selection:bg-accent selection:text-space">
+
+  <!-- ═══ Scroll Progress Bar — Skill UX: Show feedback during interaction ═══ -->
+  <div id="scroll-progress" class="fixed top-0 left-0 h-[2px] z-[100]
+    bg-gradient-to-r from-aurora via-accent to-accentSecondary transition-none"
+    style="width:0%" aria-hidden="true"></div>
+
+  <!-- ═══ Aurora BG mesh — Skill: Aurora UI 8-12s loop gradient ═══ -->
+  <div class="aurora-mesh" aria-hidden="true"></div>
+
+  <!-- ═══ Ambient decorative rings (fixed) ═══ -->
+  <div class="glow-ring ring-1" aria-hidden="true"></div>
+  <div class="glow-ring ring-2" aria-hidden="true"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 1 : HERO                                               -->
+  <!-- Skill: Storytelling-Driven + Hero-Centric + Motion-Driven      -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section id="hero" class="relative h-screen w-full flex items-center justify-center
+                             text-center px-6 overflow-hidden border-b border-white/[0.04]"
+           aria-label="Hero section">
+
+    <!-- Star field canvas -->
+    <canvas id="heroStars" class="absolute inset-0 w-full h-full pointer-events-none"
+            aria-hidden="true"></canvas>
+
+    <!-- Decorative orbit rings — Skill: Aurora UI subtle animation -->
+    <div class="hero-ring hero-ring-sm absolute rounded-full pointer-events-none"
+         aria-hidden="true"></div>
+    <div class="hero-ring hero-ring-lg absolute rounded-full pointer-events-none"
+         aria-hidden="true"></div>
+
+    <!-- Liquid glass hero card — Skill: Liquid Glass + Glassmorphism -->
+    <div class="hero-glass-card relative z-10 flex flex-col items-center gap-7 max-w-3xl
+                rounded-[32px] px-10 py-14">
+
+      <!-- Label row — Skill: minimal, direct messaging -->
+      <div id="hero-label" class="opacity-0 flex items-center gap-4" role="text">
+        <span class="w-10 h-px bg-accent/30" aria-hidden="true"></span>
+        <span class="pulse-orbit" aria-hidden="true"></span>
+        <span class="font-mono text-accent text-[11px] tracking-[0.42em] uppercase">Solar Orbit Studio</span>
+        <span class="pulse-orbit" aria-hidden="true"></span>
+        <span class="w-10 h-px bg-accent/30" aria-hidden="true"></span>
+      </div>
+
+      <!-- Headline — Skill: "clamp" fluid type, Playfair Display bold serif -->
+      <h1 id="hero-title" class="opacity-0 font-serif font-light leading-none tracking-[-0.04em]
+          text-[clamp(72px,11vw,128px)]
+          bg-gradient-to-b from-white via-white/88 to-white/25 bg-clip-text text-transparent">
+        Celestia
+      </h1>
+
+      <!-- Subhead — Skill: large readable body, Outfit 300 weight -->
+      <p id="hero-sub" class="opacity-0 font-sans font-light text-textMuted text-[1.05rem]
+          leading-relaxed max-w-md tracking-wide">
+        A premium journey through the solar system —
+        orbital mechanics, planetary data, and live gravity simulation.
+      </p>
+
+      <!-- CTA row — Skill: high-contrast CTA, minimum 44px touch target -->
+      <div id="hero-cta" class="opacity-0 flex items-center gap-4 mt-1">
+        <a href="#planets"
+           class="hero-btn-primary min-h-[44px] px-7 py-3 rounded-full font-sans font-medium
+                  text-sm tracking-wide text-space bg-accent hover:bg-accent/90
+                  transition-all duration-200 focus-visible:outline focus-visible:outline-2
+                  focus-visible:outline-accent focus-visible:outline-offset-2"
+           aria-label="Explore the planets">
+          Explore Worlds
+        </a>
+        <a href="#system-map"
+           class="hero-btn-ghost min-h-[44px] px-7 py-3 rounded-full font-sans font-light
+                  text-sm tracking-wide text-white/70 border border-white/10
+                  hover:border-white/22 hover:text-white transition-all duration-200
+                  focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40
+                  focus-visible:outline-offset-2"
+           aria-label="Open system map">
+          System Map
+        </a>
+      </div>
+
+      <!-- Scroll indicator — Skill: smooth scroll feedback -->
+      <div id="hero-scroll" class="opacity-0 flex flex-col items-center gap-3 mt-3
+           font-mono text-[9px] uppercase tracking-[0.22em] text-textMuted/40"
+           aria-hidden="true">
+        <div class="w-6 h-10 border border-white/[0.12] rounded-full relative">
+          <span class="mouse-wheel"></span>
+        </div>
+        <span>Scroll to Begin</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 2 : STICKY PLANET SCROLL CATALOG                       -->
+  <!-- Skill: Storytelling-Driven + Scroll-Triggered Storytelling      -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section id="planets" class="relative bg-space-2 border-b border-white/[0.04]"
+           aria-label="Planet catalog">
+
+    <!-- Chapter header — Skill: narrative chapter structure -->
+    <div id="planets-intro" class="text-center py-28 px-8 border-b border-white/[0.04] opacity-0">
+      <span class="font-mono text-accent/45 text-[10px] tracking-[0.38em] uppercase"
+            role="text">/ 01 — Planet Catalog</span>
+      <h2 class="font-serif font-light text-5xl lg:text-[4rem] mt-5 tracking-tight
+                 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+        The Solar Worlds
+      </h2>
+      <p class="font-sans font-light text-textMuted text-[1.05rem] mt-4 max-w-md mx-auto leading-relaxed">
+        Scroll through each world — orbital mechanics, surface data, and what makes it extraordinary.
+      </p>
+      <!-- Skill: section divider line -->
+      <div class="flex items-center justify-center gap-4 mt-10 opacity-40" aria-hidden="true">
+        <span class="w-24 h-px bg-gradient-to-r from-transparent to-accent/50"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-accent/50"></span>
+        <span class="w-24 h-px bg-gradient-to-l from-transparent to-accent/50"></span>
+      </div>
+    </div>
+
+    <!-- Sticky grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 items-start">
+
+      <!-- ── LEFT: Sticky planet visual ── -->
+      <div id="sticky-planet-col"
+           class="lg:sticky top-0 flex flex-col items-center justify-center relative overflow-hidden
+                  h-[70vw] lg:h-screen border-b lg:border-b-0 border-white/[0.04]"
+           aria-live="polite" aria-atomic="true">
+
+        <!-- Ambient planet glow — Skill: glassmorphism depth -->
+        <div id="planet-glow"
+             class="absolute w-[420px] h-[420px] rounded-full blur-[110px] opacity-0
+                    pointer-events-none transition-colors duration-700"
+             aria-hidden="true"></div>
+
+        <!-- Rotating orbit deco rings -->
+        <div class="orbit-ring orbit-ring-inner absolute rounded-full pointer-events-none"
+             aria-hidden="true"></div>
+        <div class="orbit-ring orbit-ring-outer absolute rounded-full pointer-events-none"
+             aria-hidden="true"></div>
+
+        <!-- Liquid glass ring around canvas — Skill: Liquid Glass -->
+        <div class="planet-canvas-glass absolute"
+             style="width:min(75vw,345px);height:min(75vw,345px);"
+             aria-hidden="true"></div>
+
+        <!-- Main planet canvas -->
+        <canvas id="stickyCanvas" width="480" height="480"
+          class="relative z-10"
+          style="width:min(70vw,320px);height:min(70vw,320px);"
+          aria-label="Rotating planet visualization">
+        </canvas>
+
+        <!-- Index + name overlay -->
+        <div class="absolute top-8 left-10 hidden lg:flex flex-col gap-1.5 z-20">
+          <span id="overlay-index" class="font-mono text-accent/22 text-[10px] tracking-[0.35em]">— 01</span>
+          <span id="overlay-name" class="font-sans font-light text-white/55 text-sm tracking-[0.14em]">Mercury</span>
+        </div>
+
+        <!-- Planet type bottom -->
+        <div id="overlay-type"
+             class="absolute bottom-8 font-mono text-[9px] text-textMuted/38 tracking-[0.28em] uppercase hidden lg:block">
+          Terrestrial Planet
+        </div>
+
+        <!-- Navigation dots — Skill: active state + focus-visible -->
+        <nav class="absolute right-6 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-3.5 z-20"
+             aria-label="Planet navigation">
+          <button class="planet-nav-dot active" data-planet="mercury" aria-label="Go to Mercury"></button>
+          <button class="planet-nav-dot" data-planet="venus"   aria-label="Go to Venus"></button>
+          <button class="planet-nav-dot" data-planet="earth"   aria-label="Go to Earth"></button>
+          <button class="planet-nav-dot" data-planet="mars"    aria-label="Go to Mars"></button>
+          <button class="planet-nav-dot" data-planet="jupiter" aria-label="Go to Jupiter"></button>
+          <button class="planet-nav-dot" data-planet="saturn"  aria-label="Go to Saturn"></button>
+        </nav>
+      </div>
+
+      <!-- ── RIGHT: Scrollable text panels ── -->
+      <!-- Skill: scroll-triggered storytelling, chapter-like structure -->
+      <div id="planet-panels" class="border-l-0 lg:border-l border-white/[0.04]">
+
+        <!-- ─ Mercury ─ -->
+        <article class="planet-panel min-h-screen flex flex-col justify-center
+                        px-10 lg:px-16 py-24 border-b border-white/[0.04]"
+                 data-planet="mercury" aria-label="Mercury details">
+          <div class="panel-inner flex flex-col gap-6 max-w-lg">
+            <span class="panel-num font-mono font-light leading-none select-none"
+                  style="font-size:clamp(52px,6.5vw,80px);color:rgba(112,128,144,.12)">01</span>
+            <h3 class="panel-name font-serif font-light leading-none tracking-tight"
+                style="font-size:clamp(50px,7.5vw,86px)">Mercury</h3>
+            <div class="panel-tags flex items-center gap-2 flex-wrap">
+              <span class="tag-base bg-white/[0.04] border border-white/[0.09] text-textMuted">Terrestrial</span>
+              <span class="tag-base bg-accent/[0.06] border border-accent/[0.18] text-accent/75">Innermost</span>
+              <span class="tag-base bg-white/[0.03] border border-white/[0.07] text-textMuted/60">No Atmosphere</span>
+            </div>
+            <p class="panel-desc font-sans font-light text-textMuted leading-[1.78]"
+               style="font-size:clamp(14px,1.1vw,17px)">
+              The smallest planet in our solar system and nearest to the Sun. Its lack of atmosphere
+              causes extreme temperature swings — boiling hot days and freezing cold nights, swinging
+              over 600°C between them. Mercury completes an orbit every 88 Earth days.
+            </p>
+            <!-- Skill: stat cards with hover lift — standard hover 200-300ms -->
+            <div class="panel-stats grid grid-cols-3 gap-3 mt-1">
+              <div class="stat-card">
+                <span class="stat-val">3.7</span><span class="stat-unit">m/s²</span>
+                <span class="stat-label">Gravity</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">88</span><span class="stat-unit">Earth Days</span>
+                <span class="stat-label">Year</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">167°</span><span class="stat-unit">Celsius</span>
+                <span class="stat-label">Avg Temp</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ─ Venus ─ -->
+        <article class="planet-panel min-h-screen flex flex-col justify-center
+                        px-10 lg:px-16 py-24 border-b border-white/[0.04]"
+                 data-planet="venus" aria-label="Venus details">
+          <div class="panel-inner flex flex-col gap-6 max-w-lg">
+            <span class="panel-num font-mono font-light leading-none select-none"
+                  style="font-size:clamp(52px,6.5vw,80px);color:rgba(245,166,35,.10)">02</span>
+            <h3 class="panel-name font-serif font-light leading-none tracking-tight"
+                style="font-size:clamp(50px,7.5vw,86px)">Venus</h3>
+            <div class="panel-tags flex items-center gap-2 flex-wrap">
+              <span class="tag-base bg-white/[0.04] border border-white/[0.09] text-textMuted">Terrestrial</span>
+              <span class="tag-base bg-amber-500/[0.07] border border-amber-500/[0.22] text-amber-400/75">Hottest</span>
+              <span class="tag-base bg-white/[0.03] border border-white/[0.07] text-textMuted/60">Retrograde</span>
+            </div>
+            <p class="panel-desc font-sans font-light text-textMuted leading-[1.78]"
+               style="font-size:clamp(14px,1.1vw,17px)">
+              Venus spins slowly in the opposite direction from most planets. Covered by thick, toxic
+              clouds of sulfuric acid, a runaway greenhouse effect makes it hotter than Mercury —
+              despite being farther from the Sun. Surface pressure is 90× Earth's.
+            </p>
+            <div class="panel-stats grid grid-cols-3 gap-3 mt-1">
+              <div class="stat-card">
+                <span class="stat-val">8.9</span><span class="stat-unit">m/s²</span>
+                <span class="stat-label">Gravity</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">225</span><span class="stat-unit">Earth Days</span>
+                <span class="stat-label">Year</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">462°</span><span class="stat-unit">Celsius</span>
+                <span class="stat-label">Avg Temp</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ─ Earth ─ -->
+        <article class="planet-panel min-h-screen flex flex-col justify-center
+                        px-10 lg:px-16 py-24 border-b border-white/[0.04]"
+                 data-planet="earth" aria-label="Earth details">
+          <div class="panel-inner flex flex-col gap-6 max-w-lg">
+            <span class="panel-num font-mono font-light leading-none select-none"
+                  style="font-size:clamp(52px,6.5vw,80px);color:rgba(0,245,212,.09)">03</span>
+            <h3 class="panel-name font-serif font-light leading-none tracking-tight"
+                style="font-size:clamp(50px,7.5vw,86px)">Earth</h3>
+            <div class="panel-tags flex items-center gap-2 flex-wrap">
+              <span class="tag-base bg-white/[0.04] border border-white/[0.09] text-textMuted">Terrestrial</span>
+              <span class="tag-base bg-teal-500/[0.07] border border-teal-500/[0.22] text-teal-400/75">Our Home</span>
+              <span class="tag-base bg-white/[0.03] border border-white/[0.07] text-textMuted/60">Life-Bearing</span>
+            </div>
+            <p class="panel-desc font-sans font-light text-textMuted leading-[1.78]"
+               style="font-size:clamp(14px,1.1vw,17px)">
+              Our home planet and the only known world to harbor life. 71% of its surface is liquid
+              ocean. A dynamic magnetic field, active plate tectonics, and a protective ozone layer
+              make it uniquely alive in a solar system of extremes.
+            </p>
+            <div class="panel-stats grid grid-cols-3 gap-3 mt-1">
+              <div class="stat-card">
+                <span class="stat-val">9.8</span><span class="stat-unit">m/s²</span>
+                <span class="stat-label">Gravity</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">365</span><span class="stat-unit">Earth Days</span>
+                <span class="stat-label">Year</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">15°</span><span class="stat-unit">Celsius</span>
+                <span class="stat-label">Avg Temp</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ─ Mars ─ -->
+        <article class="planet-panel min-h-screen flex flex-col justify-center
+                        px-10 lg:px-16 py-24 border-b border-white/[0.04]"
+                 data-planet="mars" aria-label="Mars details">
+          <div class="panel-inner flex flex-col gap-6 max-w-lg">
+            <span class="panel-num font-mono font-light leading-none select-none"
+                  style="font-size:clamp(52px,6.5vw,80px);color:rgba(217,95,67,.10)">04</span>
+            <h3 class="panel-name font-serif font-light leading-none tracking-tight"
+                style="font-size:clamp(50px,7.5vw,86px)">Mars</h3>
+            <div class="panel-tags flex items-center gap-2 flex-wrap">
+              <span class="tag-base bg-white/[0.04] border border-white/[0.09] text-textMuted">Terrestrial</span>
+              <span class="tag-base bg-rose-500/[0.07] border border-rose-500/[0.22] text-rose-400/75">Red Planet</span>
+              <span class="tag-base bg-white/[0.03] border border-white/[0.07] text-textMuted/60">Next Frontier</span>
+            </div>
+            <p class="panel-desc font-sans font-light text-textMuted leading-[1.78]"
+               style="font-size:clamp(14px,1.1vw,17px)">
+              A dusty, cold desert world with a thin CO₂ atmosphere. Iron oxide minerals rust its
+              soil red. Strong evidence suggests Mars was warmer and wetter billions of years ago —
+              a world that once could have harbored life and may again.
+            </p>
+            <div class="panel-stats grid grid-cols-3 gap-3 mt-1">
+              <div class="stat-card">
+                <span class="stat-val">3.7</span><span class="stat-unit">m/s²</span>
+                <span class="stat-label">Gravity</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">687</span><span class="stat-unit">Earth Days</span>
+                <span class="stat-label">Year</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">-62°</span><span class="stat-unit">Celsius</span>
+                <span class="stat-label">Avg Temp</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ─ Jupiter ─ -->
+        <article class="planet-panel min-h-screen flex flex-col justify-center
+                        px-10 lg:px-16 py-24 border-b border-white/[0.04]"
+                 data-planet="jupiter" aria-label="Jupiter details">
+          <div class="panel-inner flex flex-col gap-6 max-w-lg">
+            <span class="panel-num font-mono font-light leading-none select-none"
+                  style="font-size:clamp(52px,6.5vw,80px);color:rgba(167,139,250,.10)">05</span>
+            <h3 class="panel-name font-serif font-light leading-none tracking-tight"
+                style="font-size:clamp(50px,7.5vw,86px)">Jupiter</h3>
+            <div class="panel-tags flex items-center gap-2 flex-wrap">
+              <span class="tag-base bg-white/[0.04] border border-white/[0.09] text-textMuted">Gas Giant</span>
+              <span class="tag-base bg-violet-500/[0.07] border border-violet-500/[0.22] text-violet-400/75">Largest</span>
+              <span class="tag-base bg-white/[0.03] border border-white/[0.07] text-textMuted/60">79 Moons</span>
+            </div>
+            <p class="panel-desc font-sans font-light text-textMuted leading-[1.78]"
+               style="font-size:clamp(14px,1.1vw,17px)">
+              More than twice as massive as all other planets combined. The Great Red Spot —
+              a hurricane-like storm wider than Earth — has raged for over 350 years.
+              Jupiter's gravity shields the inner solar system from comet impacts.
+            </p>
+            <div class="panel-stats grid grid-cols-3 gap-3 mt-1">
+              <div class="stat-card">
+                <span class="stat-val">24.8</span><span class="stat-unit">m/s²</span>
+                <span class="stat-label">Gravity</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">4,333</span><span class="stat-unit">Earth Days</span>
+                <span class="stat-label">Year</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">-108°</span><span class="stat-unit">Celsius</span>
+                <span class="stat-label">Avg Temp</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- ─ Saturn ─ -->
+        <article class="planet-panel min-h-screen flex flex-col justify-center
+                        px-10 lg:px-16 py-24"
+                 data-planet="saturn" aria-label="Saturn details">
+          <div class="panel-inner flex flex-col gap-6 max-w-lg">
+            <span class="panel-num font-mono font-light leading-none select-none"
+                  style="font-size:clamp(52px,6.5vw,80px);color:rgba(96,165,250,.09)">06</span>
+            <h3 class="panel-name font-serif font-light leading-none tracking-tight"
+                style="font-size:clamp(50px,7.5vw,86px)">Saturn</h3>
+            <div class="panel-tags flex items-center gap-2 flex-wrap">
+              <span class="tag-base bg-white/[0.04] border border-white/[0.09] text-textMuted">Gas Giant</span>
+              <span class="tag-base bg-blue-500/[0.07] border border-blue-500/[0.22] text-blue-400/75">Ringed</span>
+              <span class="tag-base bg-white/[0.03] border border-white/[0.07] text-textMuted/60">Least Dense</span>
+            </div>
+            <p class="panel-desc font-sans font-light text-textMuted leading-[1.78]"
+               style="font-size:clamp(14px,1.1vw,17px)">
+              Adorned with a breathtaking system of icy rings stretching 282,000 km wide,
+              yet only 10 meters thick. Mostly hydrogen and helium, Saturn is so light it would
+              float on water — if an ocean large enough existed.
+            </p>
+            <div class="panel-stats grid grid-cols-3 gap-3 mt-1">
+              <div class="stat-card">
+                <span class="stat-val">10.4</span><span class="stat-unit">m/s²</span>
+                <span class="stat-label">Gravity</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">10,759</span><span class="stat-unit">Earth Days</span>
+                <span class="stat-label">Year</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-val">-139°</span><span class="stat-unit">Celsius</span>
+                <span class="stat-label">Avg Temp</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div><!-- /#planet-panels -->
+    </div><!-- /.grid -->
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 3 : INTERACTIVE SYSTEM MAP                             -->
+  <!-- Skill: Data-Dense Dashboard + Real-Time Monitoring             -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <section id="system-map" class="max-w-[1280px] mx-auto px-6 py-32 flex flex-col gap-10"
+           aria-label="Interactive system map">
+
+    <header id="map-header" class="border-b border-white/[0.05] pb-7 opacity-0">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="pulse-orbit" aria-hidden="true"></span>
+        <span class="font-mono text-accent/45 text-[10px] tracking-[0.38em] uppercase">/ 02 — System Map</span>
+      </div>
+      <h2 class="font-serif font-light text-4xl lg:text-5xl tracking-tight
+                 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+        Celestia System Map
+      </h2>
+      <p class="font-sans font-light text-textMuted text-sm mt-2 tracking-wide">
+        Live orbital gravity simulation — real-time celestial analytics
+      </p>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 items-start">
+
+      <!-- ── Canvas panel — Skill: Glassmorphism, backdrop-blur: 15px ── -->
+      <section class="map-card relative overflow-hidden" aria-label="Orbit simulator">
+        <div class="card-corner" aria-hidden="true"></div>
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="font-sans font-light text-sm tracking-wide text-white">Interactive Orbit Simulator</h3>
+          <div class="flex gap-2">
+            <button id="solBlackHoleToggle" class="sim-btn min-h-[36px] border-accent/20 text-accent/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
+              <span>View: Sol</span>
+            </button>
+            <button id="playPauseBtn"
+                    class="sim-btn min-h-[36px] focus-visible:outline focus-visible:outline-2
+                           focus-visible:outline-accent focus-visible:outline-offset-2"
+                    aria-label="Pause or play simulation">
+              <span>Pause</span>
+            </button>
+            <button id="resetOrbitsBtn"
+                    class="sim-btn min-h-[36px] focus-visible:outline focus-visible:outline-2
+                           focus-visible:outline-accent focus-visible:outline-offset-2"
+                    aria-label="Reset orbital positions">
+              <span>Reset</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="relative bg-black/50 border border-white/[0.05] rounded-2xl w-full aspect-square overflow-hidden orbit-canvas-wrap">
+          <canvas id="orbitCanvas" width="620" height="620" class="w-full h-full block"
+                  aria-label="Solar system orbital simulation"></canvas>
+          <div class="absolute top-4 left-4 flex flex-col gap-1 pointer-events-none z-10">
+            <span id="systemTarget" class="font-sans font-light text-sm tracking-wide text-white/90">Sol (Sun)</span>
+            <span id="systemStatus" class="text-[10px] text-textMuted font-mono tracking-wide">Status: Stable Orbit</span>
+          </div>
+        </div>
+
+        <!-- Skill: slider with proper labels and touch-action -->
+        <div class="flex flex-col gap-4 mt-6">
+          <div class="flex items-center gap-4">
+            <label for="orbitSpeed"
+                   class="w-32 font-sans text-[10px] font-bold uppercase tracking-wider text-textMuted shrink-0">
+              Sim Speed
+            </label>
+            <input type="range" id="orbitSpeed" min="0.1" max="3" step="0.1" value="1"
+                   class="range-track flex-1" style="touch-action:manipulation"
+                   aria-valuemin="0.1" aria-valuemax="3" aria-valuenow="1">
+            <span id="speedVal" class="badge-mono" aria-live="polite">1.0x</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <label for="gravityVal"
+                   class="w-32 font-sans text-[10px] font-bold uppercase tracking-wider text-textMuted shrink-0">
+              Stellar Gravity
+            </label>
+            <input type="range" id="gravityVal" min="0.5" max="2.5" step="0.1" value="1.0"
+                   class="range-track flex-1" style="touch-action:manipulation"
+                   aria-valuemin="0.5" aria-valuemax="2.5" aria-valuenow="1.0">
+            <span id="gravityBadge" class="badge-mono" aria-live="polite">1.0G</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Right column ── -->
+      <div class="flex flex-col gap-6">
+
+        <!-- Planet selector — Skill: active state + hover states visible -->
+        <section class="map-card relative overflow-hidden" aria-label="Celestial body selector">
+          <div class="card-corner" aria-hidden="true"></div>
+          <h3 class="font-sans font-light text-sm tracking-wide text-white mb-4">Celestial Bodies</h3>
+          <div class="grid grid-cols-3 gap-2" role="group" aria-label="Select a planet">
+            <button class="planet-pill active min-h-[44px]" data-planet="mercury"
+                    aria-pressed="true">Mercury</button>
+            <button class="planet-pill min-h-[44px]" data-planet="venus"
+                    aria-pressed="false">Venus</button>
+            <button class="planet-pill min-h-[44px]" data-planet="earth"
+                    aria-pressed="false">Earth</button>
+            <button class="planet-pill min-h-[44px]" data-planet="mars"
+                    aria-pressed="false">Mars</button>
+            <button class="planet-pill min-h-[44px]" data-planet="jupiter"
+                    aria-pressed="false">Jupiter</button>
+            <button class="planet-pill min-h-[44px]" data-planet="saturn"
+                    aria-pressed="false">Saturn</button>
+          </div>
+        </section>
+
+        <!-- Stats dials — Skill: arc animations 700ms cubic-bezier -->
+        <section class="map-card relative overflow-hidden" aria-label="Planet statistics">
+          <div class="card-corner" aria-hidden="true"></div>
+          <div class="flex justify-between items-center mb-5">
+            <h3 id="planetTitle" class="font-serif font-light text-xl tracking-wide text-white">Mercury</h3>
+            <span id="planetType" class="badge-mono">Terrestrial</span>
+          </div>
+
+          <div class="flex justify-around gap-2 mb-5">
+            <!-- Gravity arc -->
+            <div class="dial-wrap">
+              <svg viewBox="0 0 100 100" class="-rotate-90 w-full h-full" aria-hidden="true">
+                <circle cx="50" cy="50" r="40" class="fill-none stroke-white/[0.04]" stroke-width="5"/>
+                <circle cx="50" cy="50" r="40" class="fill-none stroke-accent" stroke-linecap="round" stroke-width="5"
+                  id="gravityArc" stroke-dasharray="251" stroke-dashoffset="200"
+                  style="transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1)"/>
+              </svg>
+              <div class="dial-label">
+                <span id="gravityText" class="text-[10px] font-bold text-white" aria-label="Gravity value">3.7m/s²</span>
+                <span class="text-[7px] uppercase text-textMuted tracking-wider font-sans">Gravity</span>
+              </div>
+            </div>
+            <!-- Temp arc -->
+            <div class="dial-wrap">
+              <svg viewBox="0 0 100 100" class="-rotate-90 w-full h-full" aria-hidden="true">
+                <circle cx="50" cy="50" r="40" class="fill-none stroke-white/[0.04]" stroke-width="5"/>
+                <circle cx="50" cy="50" r="40" class="fill-none stroke-accentSecondary" stroke-linecap="round" stroke-width="5"
+                  id="tempArc" stroke-dasharray="251" stroke-dashoffset="150"
+                  style="transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1)"/>
+              </svg>
+              <div class="dial-label">
+                <span id="tempText" class="text-[10px] font-bold text-white" aria-label="Temperature value">167°C</span>
+                <span class="text-[7px] uppercase text-textMuted tracking-wider font-sans">Avg Temp</span>
+              </div>
+            </div>
+            <!-- Year arc -->
+            <div class="dial-wrap">
+              <svg viewBox="0 0 100 100" class="-rotate-90 w-full h-full" aria-hidden="true">
+                <circle cx="50" cy="50" r="40" class="fill-none stroke-white/[0.04]" stroke-width="5"/>
+                <circle cx="50" cy="50" r="40" class="fill-none stroke-aurora" stroke-linecap="round" stroke-width="5"
+                  id="yearArc" stroke-dasharray="251" stroke-dashoffset="249"
+                  style="transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1)"/>
+              </svg>
+              <div class="dial-label">
+                <span id="yearText" class="text-[10px] font-bold text-white" aria-label="Orbital period">88d</span>
+                <span class="text-[7px] uppercase text-textMuted tracking-wider font-sans">Period</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Planet description -->
+          <div class="bg-white/[0.02] border border-white/[0.045] rounded-xl p-4 backdrop-blur-sm">
+            <p id="planetDesc" class="font-sans text-[11.5px] leading-relaxed text-textMuted">
+              The smallest planet in our solar system and nearest to the Sun, Mercury is only slightly larger than Earth's Moon.
+            </p>
+          </div>
+        </section>
+
+        <!-- Cosmic Calendar — Skill: card hover lift 200-300ms -->
+        <section class="map-card relative overflow-hidden" aria-label="Cosmic calendar">
+          <div class="card-corner" aria-hidden="true"></div>
+          <h3 class="font-sans font-light text-sm tracking-wide text-white mb-5">Cosmic Calendar</h3>
+          <div class="flex flex-col gap-4">
+            <div class="event-row">
+              <time class="event-date" datetime="2026-07-12">JUL 12</time>
+              <div>
+                <h4 class="font-sans text-xs font-semibold text-white">Delta Aquariids Meteor Shower</h4>
+                <p class="font-sans text-[10px] text-textMuted mt-0.5 leading-relaxed">Peak visibility around midnight under dark skies.</p>
+              </div>
+            </div>
+            <div class="event-row">
+              <time class="event-date" datetime="2026-08-08">AUG 08</time>
+              <div>
+                <h4 class="font-sans text-xs font-semibold text-white">Mars–Jupiter Conjunction</h4>
+                <p class="font-sans text-[10px] text-textMuted mt-0.5 leading-relaxed">Extremely close separation, visible in early morning sky.</p>
+              </div>
+            </div>
+            <div class="flex gap-4 items-start">
+              <time class="event-date" datetime="2026-09-18">SEP 18</time>
+              <div>
+                <h4 class="font-sans text-xs font-semibold text-white">Super Harvest Moon Eclipse</h4>
+                <p class="font-sans text-[10px] text-textMuted mt-0.5 leading-relaxed">Partial lunar eclipse visible across Europe &amp; Americas.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 4 : COSMIC ANOMALIES & DEEP SPACE  -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="deep-space" class="max-w-[1280px] mx-auto px-6 py-24 flex flex-col gap-10 border-t border-white/[0.04]">
+    <header class="pb-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="pulse-orbit" style="background:#f72585;box-shadow:0 0 12px rgba(247,37,133,.8)" aria-hidden="true"></span>
+        <span class="font-mono text-accentSecondary text-[10px] tracking-[0.38em] uppercase">/ 03 — Deep Space</span>
+      </div>
+      <h2 class="font-serif font-light text-4xl lg:text-5xl tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+        Cosmic Anomalies
+      </h2>
+      <p class="font-sans font-light text-textMuted text-sm mt-2 tracking-wide">
+        Explore extreme gravitational phenomena and stellar remains.
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Card 1: Event Horizon -->
+      <article class="map-card relative overflow-hidden flex flex-col justify-between min-h-[280px]">
+        <div class="card-corner" style="border-top-color:#f72585;border-left-color:#f72585;" aria-hidden="true"></div>
+        <div>
+          <span class="font-mono text-accentSecondary/60 text-[10px] tracking-widest uppercase block mb-3">Singularity Boundary</span>
+          <h3 class="font-serif text-2xl font-light text-white mb-4">The Event Horizon</h3>
+          <p class="font-sans text-xs text-textMuted leading-relaxed">
+            The point of no return. Beyond this boundary, the escape velocity of the singularity exceeds the speed of light, trapping all matter and radiation in an inescapable gravitational well.
+          </p>
+        </div>
+        <div class="flex justify-between items-center mt-6 pt-4 border-t border-white/[0.03]">
+          <span class="font-mono text-[9px] text-textMuted/50 tracking-wider">CRITICAL LIMIT</span>
+          <span class="badge-mono border-rose-500/20 text-rose-400 bg-rose-500/5">c (Speed of Light)</span>
+        </div>
+      </article>
+
+      <!-- Card 2: Gravitational Lensing -->
+      <article class="map-card relative overflow-hidden flex flex-col justify-between min-h-[280px]">
+        <div class="card-corner" style="border-top-color:#f72585;border-left-color:#f72585;" aria-hidden="true"></div>
+        <div>
+          <span class="font-mono text-accentSecondary/60 text-[10px] tracking-widest uppercase block mb-3">Relativistic Effect</span>
+          <h3 class="font-serif text-2xl font-light text-white mb-4">Gravitational Lensing</h3>
+          <p class="font-sans text-xs text-textMuted leading-relaxed">
+            Mass bends spacetime. When light from background stars passes near a black hole, gravity warps its path, forming complex Einstein rings and doubling visual images across the sky.
+          </p>
+        </div>
+        <div class="flex justify-between items-center mt-6 pt-4 border-t border-white/[0.03]">
+          <span class="font-mono text-[9px] text-textMuted/50 tracking-wider">WARP COEFFICIENT</span>
+          <span class="badge-mono border-rose-500/20 text-rose-400 bg-rose-500/5">Infinite</span>
+        </div>
+      </article>
+
+      <!-- Card 3: Accretion Disk -->
+      <article class="map-card relative overflow-hidden flex flex-col justify-between min-h-[280px]">
+        <div class="card-corner" style="border-top-color:#f72585;border-left-color:#f72585;" aria-hidden="true"></div>
+        <div>
+          <span class="font-mono text-accentSecondary/60 text-[10px] tracking-widest uppercase block mb-3">Orbital Matter</span>
+          <h3 class="font-serif text-2xl font-light text-white mb-4">Accretion Disks</h3>
+          <p class="font-sans text-xs text-textMuted leading-relaxed">
+            Superheated gas, dust, and stellar matter spiraling at fraction-of-light speeds. Friction raises temperatures to millions of degrees, releasing high-energy X-ray radiation flares.
+          </p>
+        </div>
+        <div class="flex justify-between items-center mt-6 pt-4 border-t border-white/[0.03]">
+          <span class="font-mono text-[9px] text-textMuted/50 tracking-wider">DISK SPEED</span>
+          <span class="badge-mono border-rose-500/20 text-rose-400 bg-rose-500/5">~0.4c</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="border-t border-white/[0.04] py-14 text-center" role="contentinfo">
+    <!-- Aurora gradient divider -->
+    <div class="w-full h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent mb-10"
+         aria-hidden="true"></div>
+    <div class="flex items-center justify-center gap-3 mb-3">
+      <span class="pulse-orbit" aria-hidden="true"></span>
+      <span class="font-mono text-accent text-sm tracking-[0.38em] uppercase">Celestia</span>
+      <span class="pulse-orbit" aria-hidden="true"></span>
+    </div>
+    <p class="font-sans font-light text-textMuted/40 text-[10px] tracking-[0.22em] uppercase mt-2">
+      Premium Solar Orbit Studio
+    </p>
+    <p class="font-sans text-textMuted/25 text-[9px] mt-4 tracking-wider">
+      Built with UI-UX Pro Max Design Intelligence
+    </p>
+  </footer>
+
+  <!-- ═══ Reduced motion support — Skill: @prefers-reduced-motion ═══ -->
+  <style>
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "celestia",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://workwithme2003-cmyk.github.io/celestia",
+  "main": "app.js",
+  "scripts": {
+    "start": "http-server -p 8282",
+    "deploy": "gh-pages -d ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "framer-motion": "^12.42.2",
+    "http-server": "^14.1.1"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
+}
