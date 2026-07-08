@@ -6,7 +6,7 @@
   "main": "app.js",
   "scripts": {
     "start": "http-server -p 8282",
-    "deploy": "gh-pages -d ."
+    "deploy": "gh-pages -d . -a"
   },
   "keywords": [],
   "author": "",
